@@ -8,7 +8,7 @@ from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypedDict, final
 
 from cyberdrop_dl.cache import cached_method
-from cyberdrop_dl.crawlers.crawler import API, Crawler, SupportedPaths
+from cyberdrop_dl.crawlers.crawler import API, Crawler, DownloadConfig, SupportedPaths
 from cyberdrop_dl.exceptions import ScrapeError
 from cyberdrop_dl.mediaprops import Resolution
 from cyberdrop_dl.url_objects import AbsoluteHttpURL
@@ -49,6 +49,7 @@ class Selector:
         ALBUMS = "#moreData.photosAlbumsListing a"
 
 
+@DownloadConfig(impersonate=True)
 class PornHubCrawler(Crawler):
     SUPPORTED_PATHS: ClassVar[SupportedPaths] = {
         "Album": "/album/<album_id>",
@@ -202,7 +203,9 @@ class PornHubCrawler(Crawler):
         video = await self.api.video(video_id)
         scrape_item.uploaded_at = video.uploaded_at
         src = max(f for f in video.formats if f.format == "hls")
-        m3u8, _ = await self.request_m3u8_playlist(self.parse_url(src.url), headers={"Referer": str(video.url)})
+        m3u8, _ = await self.request_m3u8_playlist(
+            self.parse_url(src.url), headers={"Referer": str(video.url)}, impersonate=True
+        )
 
         scrape_item.url = video.url
         filename = self.create_custom_filename(video.title, ext := ".mp4", file_id=video_id, resolution=src.resolution)
